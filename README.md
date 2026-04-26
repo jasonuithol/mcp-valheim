@@ -21,7 +21,10 @@ services — the protocol is provider-agnostic.
 ## Usage
 
 ```bash
-# Build images (first time, or after Dockerfile changes)
+# One-time setup (host-side venv for control/)
+./setup.sh
+
+# Build container images (first time, or after Dockerfile changes)
 build/build-container.sh
 knowledge/build-container.sh
 
@@ -32,6 +35,12 @@ knowledge/start-container.sh
 
 # First-time KB seed
 knowledge/seed.sh
+```
+
+To validate setup works from bare state:
+
+```bash
+./clean.sh && ./setup.sh && build/build-container.sh && knowledge/build-container.sh
 ```
 
 Both containers use host networking (ports above). The knowledge
