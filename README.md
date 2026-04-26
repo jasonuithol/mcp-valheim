@@ -4,12 +4,13 @@ MCP service pair for Valheim mod development (BepInEx / dotnet / Thunderstore). 
 
 | Subdir | Container | Port | Purpose |
 |--------|-----------|------|---------|
-| `service/` | `valheim-mcp-build` | 5182 | dotnet build, Thunderstore packaging, BepInEx scaffolding |
+| `build/` | `valheim-mcp-build` | 5182 | dotnet build, Thunderstore packaging, BepInEx scaffolding |
+| `control/` | host process | 5173 | Valheim server/client lifecycle (host-runner — needs psutil + GUI) |
 | `knowledge/` | `valheim-mcp-knowledge` | 5184 | RAG over Valheim/BepInEx/Unity APIs, project source, curated docs |
 
-The two halves are paired: `service/` fires fire-and-forget POSTs at
-`knowledge/`'s `/ingest` endpoint, so build errors and other signals
-accumulate as retrievable context.
+`build/` and `control/` both fire fire-and-forget POSTs at `knowledge/`'s
+`/ingest` endpoint, so build errors AND runtime/server logs accumulate as
+retrievable context — closing the loop between deploy and feedback.
 
 ## Consumers
 
@@ -21,11 +22,12 @@ services — the protocol is provider-agnostic.
 
 ```bash
 # Build images (first time, or after Dockerfile changes)
-service/build-container.sh
+build/build-container.sh
 knowledge/build-container.sh
 
 # Start
-service/start-container.sh
+build/start-container.sh
+control/start-mcp-service.sh   # host-runner, no container
 knowledge/start-container.sh
 
 # First-time KB seed

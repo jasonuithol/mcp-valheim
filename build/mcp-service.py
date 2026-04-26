@@ -137,7 +137,7 @@ mcp = FastMCP(
         "Tools for building, deploying, and packaging Valheim mods. "
         "All tools (build, deploy, package, decompile, convert) return "
         "the full log output so you can diagnose failures without reading a file. "
-        "Server and client control tools are in the separate valheim-control MCP (mcp-control, port 5173)."
+        "Server and client control tools are in the sibling valheim-control MCP (mcp-valheim/control, port 5173)."
     ),
 )
 
