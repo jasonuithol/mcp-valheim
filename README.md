@@ -21,26 +21,18 @@ services — the protocol is provider-agnostic.
 ## Usage
 
 ```bash
-# One-time setup (host-side venv for control/)
-./setup.sh
+./setup.sh                       # one-time: host venv (control/) + build images
+./start.sh                       # bring up build + control + knowledge
+./stop.sh                        # shut everything down
+./clean.sh                       # remove venv + containers + images
 
-# Build container images (first time, or after Dockerfile changes)
-build/build-container.sh
-knowledge/build-container.sh
-
-# Start
-build/start-container.sh
-control/start-mcp-service.sh   # host-runner, no container
-knowledge/start-container.sh
-
-# First-time KB seed
-knowledge/seed.sh
+knowledge/seed.sh                # first-time KB seed
 ```
 
 To validate setup works from bare state:
 
 ```bash
-./clean.sh && ./setup.sh && build/build-container.sh && knowledge/build-container.sh
+./clean.sh && ./setup.sh && ./start.sh
 ```
 
 Both containers use host networking (ports above). The knowledge

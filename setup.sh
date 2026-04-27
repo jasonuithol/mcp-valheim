@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
 # setup.sh — one-time setup for mcp-valheim. Idempotent: safe to re-run.
 #
-# Sets up the host-side venv used by control/ (the build/ and knowledge/
-# subdirs run in containers built by their own build-container.sh scripts —
-# they have no host-side install step).
+# Provisions:
+#   - .venv/ (host-side, used by control/)
+#   - valheim-mcp-build container image
+#   - valheim-mcp-knowledge container image
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VENV="$SCRIPT_DIR/.venv"
+
+# ── Host venv for control/ ────────────────────────────────────────────────────
 
 if [ ! -d "$VENV" ]; then
     echo "Creating virtualenv at $VENV..."
@@ -18,7 +21,17 @@ echo "Installing/upgrading host-side dependencies (control/)..."
 "$VENV/bin/pip" install --quiet --upgrade pip
 "$VENV/bin/pip" install --quiet -r "$SCRIPT_DIR/control/requirements.txt"
 
-echo
-echo "Host-side setup done. To build the container subdirs:"
-echo "  $SCRIPT_DIR/build/build-container.sh"
-echo "  $SCRIPT_DIR/knowledge/build-container.sh"
+# ── Container images ──────────────────────────────────────────────────────────
+
+declare -A SUBDIR=( [valheim-mcp-build]=build [valheim-mcp-knowledge]=knowledge )
+
+for image in valheim-mcp-build valheim-mcp-knowledge; do
+    if docker image inspect "$image" >/dev/null 2>&1; then
+        echo "Image $image already built — skipping."
+    else
+        echo "Building image $image..."
+        "$SCRIPT_DIR/${SUBDIR[$image]}/build-container.sh"
+    fi
+done
+
+echo "Done."
