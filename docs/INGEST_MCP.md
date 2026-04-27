@@ -63,7 +63,7 @@ forget("decompile/assembly_valheim/Player")
 **`seed_docs(docs_path)`** — Index the curated MODDING_*.md / VALHEIM_*.md docs. Run once on first setup.
 
 ```
-seed_docs("/opt/projects/claude-sandbox/claude/docs")
+seed_docs("/opt/projects/mcp-valheim/docs")
 ```
 
 **`seed_decompile(class_name)`** — Decompile a class via mcp-build and index the output. Requires mcp-build to be running.
@@ -119,7 +119,7 @@ integration shape.
 First time after starting the service:
 
 ```
-1. seed_docs("/opt/projects/claude-sandbox/claude/docs")
+1. seed_docs("/opt/projects/mcp-valheim/docs")
 2. seed_decompile("Player")
 3. seed_decompile("ZRoutedRpc")
 4. seed_decompile("ZDOVars")

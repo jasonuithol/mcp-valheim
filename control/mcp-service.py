@@ -26,7 +26,7 @@ from mcp_knowledge_base import KnowledgeReporter
 HOME       = Path.home()
 SERVER_DIR = Path(os.environ.get("VALHEIM_SERVER_DIR", str(HOME / ".steam/steam/steamapps/common/Valheim dedicated server")))
 CLIENT_DIR = Path(os.environ.get("VALHEIM_CLIENT_DIR", str(HOME / ".steam/steam/steamapps/common/Valheim")))
-LOGS_DIR   = Path(os.environ.get("VALHEIM_LOGS_DIR",   str(HOME / "Projects/claude-sandbox/workspace/valheim/logs")))
+LOGS_DIR   = Path(os.environ.get("VALHEIM_LOGS_DIR",   str(HOME / "Projects/claude-sandbox-core/workspaces/valheim/valheim/logs")))
 
 VALHEIM_SERVER_CONTAINER = "valheim_server"
 VALHEIM_SERVER_IMAGE     = "valheim_server"

@@ -83,7 +83,7 @@ extra and aren't pulled in for reporter consumers.
 ## Step 4: Rebuild and restart
 
 ```bash
-cd ~/Projects/claude-sandbox/mcp-build
+cd ~/Projects/mcp-valheim/build
 ./build-container.sh
 ./start-container.sh
 ```

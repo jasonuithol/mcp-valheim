@@ -5,20 +5,21 @@ the Claude Code container using the MCP tool servers.
 
 ## Architecture
 
-Three MCP services run on the host. `mcp-build` runs in a container (heavy
-build tools). `mcp-control` runs as a host process (needs access to host
-processes and container management). `mcp-knowledge` runs in a container
-(RAG knowledge base). Both mcp-build and mcp-control report every tool
-execution to mcp-knowledge via fire-and-forget HTTP POST.
+Three MCP services back the `valheim` domain of `claude-sandbox-core`.
+`build/` runs in a container (heavy build tools). `control/` runs as a
+host process (needs access to host processes and container management).
+`knowledge/` runs in a container (RAG knowledge base). Both `build/` and
+`control/` report every tool execution to `knowledge/` via
+fire-and-forget HTTP POST.
 
 ```
 Podman (on host)
 │
-├── claude-sandbox          Claude Code
+├── claude-sandbox-core     Claude Code (valheim domain)
 │       │
 │       ├──── HTTP (port 5182) ────────────────────────────────────┐
 │       │                                                           ▼
-│       │                                             mcp-build    (port 5182, container)
+│       │                                             valheim-build    (port 5182, container)
 │       │                                                  │
 │       │                                                  ├── dotnet build     (mod builds)
 │       │                                                  ├── ilspycmd         (decompile DLLs)
@@ -27,7 +28,7 @@ Podman (on host)
 │       │                                                                               │
 │       ├──── HTTP (port 5173) ────────────────────────────────────┐                    │
 │       │                                                           ▼                    │
-│       │                                             mcp-control  (port 5173, host)     │
+│       │                                             valheim-control (port 5173, host)   │
 │       │                                                  │                              │
 │       │                                                  ├── docker (server container)  │
 │       │                                                  ├── psutil (Steam/client)      │
@@ -35,16 +36,16 @@ Podman (on host)
 │       │                                                                               │  │
 │       └──── HTTP (port 5184) ────────────────────────────────────┐                    │  │
 │                                                                   ▼                    │  │
-│                                                     mcp-knowledge (port 5184, container)◄─┘
+│                                                     valheim-knowledge (port 5184, container)◄─┘
 │                                                          │
 │                                                          ├── ChromaDB    (vector store)
 │                                                          ├── /ingest     (auto-learns from tool use)
 │                                                          └── MCP tools   (ask, ask_class, stats, etc.)
 │
-├── valheim_server          Valheim dedicated server (managed by mcp-control)
+├── valheim_server          Valheim dedicated server (managed by valheim-control)
 │
 └── [host]
-        └── Valheim client  (Steam/native — started/stopped by mcp-control)
+        └── Valheim client  (Steam/native — started/stopped by valheim-control)
 ```
 
 ## Setup
@@ -57,45 +58,31 @@ Ensure the Podman socket is running:
 systemctl --user enable --now podman.socket
 ```
 
-### 1. Build the mcp-build image (once)
+### 1-3. Bring up the whole stack via claude-sandbox-core
 
 ```bash
-~/Projects/claude-sandbox/mcp-build/build-container.sh
+~/Projects/claude-sandbox-core/bin/start.sh valheim <project>
 ```
 
-This installs Python, dotnet SDK, ilspycmd, and rsvg-convert into the image.
-Takes a few minutes on first build.
+`bin/start.sh` calls `mcp-valheim/setup.sh` (idempotent: builds the
+`valheim-build` and `valheim-knowledge` images) then
+`mcp-valheim/start.sh` (which starts all three services: build container,
+control host process, knowledge container). The Claude container is
+launched last and receives the registered MCP service URLs from the
+domain conf.
 
-### 2. Start mcp-build
+### 4. Service registration
 
-```bash
-~/Projects/claude-sandbox/mcp-build/start-container.sh
-```
+Done automatically by `claude-sandbox-core`'s entrypoint, which reads
+`domains/valheim.conf`'s `SERVICES` array and runs `claude mcp add` for
+each. Verify with `/mcp` inside any Claude Code session.
 
-Starts the container and listens on port 5182.
-
-### 3. Start mcp-control (on the host)
-
-```bash
-~/Projects/claude-sandbox/mcp-control/start-mcp-service.sh
-```
-
-Runs directly on the host (no container). Listens on port 5173.
-Handles server/client lifecycle and Steam status.
-
-### 4. Register both with Claude Code (once, inside the claude-sandbox container)
-
-```bash
-~/Projects/claude-sandbox/claude/register-services.sh
-```
-
-Verify the connection with `/mcp` inside any Claude Code session.
-
-### 5. Refresh the path map if the claude-sandbox container is restarted
+### 5. Refresh the path map if the sandbox container is restarted
 
 The path map (used by `decompile_dll` and `convert_svg` to translate container
-paths to host paths) is built when mcp-build starts. If claude-sandbox is
-restarted, call `refresh_path_map()` to rebuild it without restarting mcp-build.
+paths to host paths) is built when `valheim-build` starts. If the Claude
+sandbox container is restarted, call `refresh_path_map()` to rebuild it
+without restarting `valheim-build`.
 
 ---
 
@@ -136,7 +123,7 @@ decompile_dll(container_path)
 ```
 
 Decompiles a DLL with `ilspycmd` and returns the source. Pass the path as
-seen from inside the claude-sandbox container:
+seen from inside the Claude sandbox container:
 
 ```
 /workspace/valheim/server/valheim_server_Data/Managed/assembly_valheim.dll
@@ -152,7 +139,7 @@ convert_svg(container_path)
 ```
 
 Converts an SVG to a 256×256 PNG using `rsvg-convert`. Pass the path as
-seen from inside the claude-sandbox container:
+seen from inside the Claude sandbox container:
 
 ```
 /workspace/ValheimRainDance/ThunderstoreAssets/icon.svg
@@ -229,7 +216,7 @@ After starting mcp-knowledge for the first time, seed with the curated docs
 and key Valheim classes:
 
 ```
-seed_docs("/opt/projects/claude-sandbox/claude/docs")
+seed_docs("/opt/projects/mcp-valheim/docs")
 seed_decompile("Player")
 seed_decompile("ZRoutedRpc")
 seed_decompile("ZDOVars")
@@ -248,8 +235,8 @@ automatically from normal tool usage.
 
 ## Logs
 
-All tool logs are written to `~/Projects/claude-sandbox/workspace/valheim/logs/` on the host
-(mounted into the mcp-build container at `/opt/workspace/valheim/logs/`),
+All tool logs are written to `~/Projects/claude-sandbox-core/workspaces/valheim/valheim/logs/` on the host
+(mounted into the valheim-build container at `/opt/workspace/valheim/logs/`),
 and are also returned directly in the tool response.
 
 | File | Written by |
@@ -271,9 +258,9 @@ Each log is overwritten on each run and includes timestamps at start and end.
 ## BepInEx
 
 BepInEx is installed on both server and client. Plugin and config directories
-are writable from inside the claude-sandbox container:
+are writable from inside the Claude sandbox container:
 
-| Location | Path (in claude-sandbox) |
+| Location | Path (in sandbox) |
 |----------|--------------------------|
 | Server plugins | `/workspace/valheim/server/BepInEx/plugins/` |
 | Client plugins | `/workspace/valheim/client/BepInEx/plugins/` |
@@ -298,10 +285,14 @@ To test from the host without Claude Code, use the helper scripts:
 
 ```bash
 # Get a session ID
-~/Projects/claude-sandbox/get-mcp-session-id.sh
+curl -i -H 'Accept: application/json, text/event-stream' \
+  -X POST -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"0"}}}' \
+  http://localhost:5182/mcp | grep -i mcp-session-id
 
 # List tools (requires httpx — available in .venv)
-source ~/Projects/claude-sandbox/.venv/bin/activate
+# httpx is available wherever claude-sandbox-core's tooling runs;
+# install it ad-hoc with `pip install httpx` if needed.
 python3 - <<'EOF'
 import httpx, json
 base = 'http://localhost:5182/mcp'  # or 5173 for mcp-control, 5184 for mcp-knowledge

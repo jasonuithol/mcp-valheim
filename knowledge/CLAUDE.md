@@ -2,14 +2,15 @@
 
 A RAG-backed MCP service that stores and retrieves modding knowledge learned
 from decompiling game assemblies, building mods, debugging failures, and
-shipping to Thunderstore. Runs as a container alongside `mcp-build` and
-`mcp-control` in the claude-sandbox ecosystem.
+shipping to Thunderstore. Runs as a container alongside `build/` and
+`control/` (sibling subdirs in this repo) inside `claude-sandbox-core`'s
+`valheim` domain.
 
 ---
 
 ## Goal
 
-Replace the static docs in `claude-sandbox/claude/docs/MODDING_*.md` with a
+Replace the static docs in `mcp-valheim/docs/MODDING_*.md` with a
 living knowledge base that grows automatically as mods are built. The docs
 remain the curated reference — the RAG layer adds the deep, hard-won detail
 that doesn't fit neatly into documentation.
@@ -19,11 +20,11 @@ that doesn't fit neatly into documentation.
 ## Architecture
 
 ```
-claude-sandbox ecosystem
+mcp-valheim (this repo)
 │
-├── mcp-build      (port 5182, container)  — build, deploy, package, publish
-├── mcp-control    (port 5173, host)       — server/client lifecycle
-└── mcp-knowledge  (port 5184, container)  — THIS SERVICE: RAG knowledge base
+├── build/      (port 5182, container)  — build, deploy, package, publish, download
+├── control/    (port 5173, host)       — server/client lifecycle
+└── knowledge/  (port 5184, container)  — THIS SERVICE: RAG knowledge base
 ```
 
 ### Design Principle: Passive Ingest, Active Query
@@ -113,7 +114,7 @@ timeout, tz-aware UTC timestamps).
 ### Container layout
 
 ```
-mcp-knowledge/
+mcp-valheim/knowledge/
 ├── CLAUDE.md              ← this file
 ├── Dockerfile
 ├── build-container.sh
@@ -201,7 +202,7 @@ Ingested automatically when `decompile_dll` is called, or manually via
 
 ### 2. Curated docs (seed data)
 
-The existing docs in `claude-sandbox/claude/docs/` are the seed corpus:
+The curated docs in `mcp-valheim/docs/` are the seed corpus:
 
 - `MODDING_TOOLCHAIN.md` — build environment, csproj template, BepInEx setup
 - `MODDING_PLUGIN_BASICS.md` — plugin boilerplate, server/client detection
@@ -290,7 +291,7 @@ Based on `python:3.12-slim-bookworm` (same as mcp-build). Installs:
 ### Volumes
 
 ```
--v "$HOME/Projects/claude-sandbox/mcp-knowledge/knowledge:/opt/knowledge"
+-v "$HOME/Projects/mcp-valheim/knowledge/knowledge:/opt/knowledge"
 -v "$HOME/Projects:/opt/projects:ro"
 ```
 
@@ -317,7 +318,7 @@ First-time setup after the service is running:
 
 1. Index the curated docs:
    ```
-   seed_docs("/opt/projects/claude-sandbox/claude/docs")
+   seed_docs("/opt/projects/mcp-valheim/docs")
    ```
 
 2. Decompile and index the key classes:

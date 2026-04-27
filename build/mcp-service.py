@@ -5,7 +5,7 @@ mcp-service.py — mcp-build
 Runs inside a Docker container. Exposes mod build, deploy, package,
 decompile, and SVG conversion tools to Claude Code.
 
-Register with Claude Code (run this inside the claude-sandbox container):
+Register with Claude Code (run this inside the claude-sandbox-core container):
     claude mcp add valheim-build --transport http http://localhost:5182/mcp
 
 Or on the host directly:
@@ -30,21 +30,21 @@ HOME        = Path.home()
 SERVER_DIR  = Path(os.environ.get("VALHEIM_SERVER_DIR",  str(HOME / ".steam/steam/steamapps/common/Valheim dedicated server")))
 CLIENT_DIR  = Path(os.environ.get("VALHEIM_CLIENT_DIR",  str(HOME / ".steam/steam/steamapps/common/Valheim")))
 PROJECT_DIR = Path(os.environ.get("VALHEIM_PROJECT_DIR", str(HOME / "Projects")))
-LOGS_DIR    = Path(os.environ.get("VALHEIM_LOGS_DIR",    str(HOME / "Projects/claude-sandbox/workspace/valheim/logs")))
+LOGS_DIR    = Path(os.environ.get("VALHEIM_LOGS_DIR",    str(HOME / "Projects/claude-sandbox-core/workspaces/valheim/valheim/logs")))
 
 LOGS_DIR.mkdir(parents=True, exist_ok=True)
 
 # ── Container → host path map ─────────────────────────────────────────────────
 #
-# Translates paths as seen inside claude-sandbox to paths inside this container.
-# Built statically from env vars — no docker socket required.
+# Translates paths as seen inside the Claude sandbox container to paths inside
+# this container. Built statically from env vars — no docker socket required.
 #
-# Claude-sandbox mounts              →  This container's paths
+# Sandbox mounts                     →  This container's paths
 #   CLAUDE_SERVER_MOUNT              →  SERVER_DIR
 #   CLAUDE_CLIENT_MOUNT              →  CLIENT_DIR
 #   CLAUDE_PROJECT_MOUNT/<project>   →  PROJECT_DIR/<project>
 #
-# Override the CLAUDE_* vars if claude-sandbox uses non-default workspace paths.
+# Override the CLAUDE_* vars if the sandbox uses non-default workspace paths.
 
 _CLAUDE_SERVER_MOUNT  = os.environ.get("CLAUDE_SERVER_MOUNT",  "/workspace/valheim/server")
 _CLAUDE_CLIENT_MOUNT  = os.environ.get("CLAUDE_CLIENT_MOUNT",  "/workspace/valheim/client")
@@ -55,8 +55,8 @@ _path_map: dict[str, str] = {}
 
 def _build_path_map() -> str:
     """
-    Build the claude-sandbox → this container path map from known mount points.
-    Call refresh_path_map() if the claude-sandbox workspace layout has changed.
+    Build the sandbox → this container path map from known mount points.
+    Call refresh_path_map() if the sandbox workspace layout has changed.
     """
     global _path_map
     _path_map = {
@@ -72,7 +72,7 @@ def _build_path_map() -> str:
 
 def _container_to_host(container_path: str) -> str:
     """
-    Translate a claude-sandbox path to its equivalent inside this container.
+    Translate a sandbox-side path to its equivalent inside this container.
     Raises ValueError if no mapping is found.
     """
     best_dst = ""
@@ -640,7 +640,7 @@ async def convert_svg(container_path: str) -> str:
 @mcp.tool()
 def refresh_path_map() -> str:
     """
-    Rebuild the claude-sandbox → mcp-build path map from environment variables.
+    Rebuild the sandbox → valheim-build path map from environment variables.
     Only needed if mount paths have changed since startup.
     """
     result = _build_path_map()

@@ -1,6 +1,6 @@
 FROM python:3.12-slim-bookworm
 
-LABEL maintainer="claude-sandbox"
+LABEL maintainer="mcp-valheim"
 LABEL description="Valheim mod build tools MCP server"
 
 # ── System dependencies ────────────────────────────────────────────────────────
