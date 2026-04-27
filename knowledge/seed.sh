@@ -70,7 +70,7 @@ echo "  Session: $B_SESSION"
 
 echo ""
 echo "=== Seeding docs ==="
-call_tool "$BASE" "$K_SESSION" 2 "seed_docs" '{"docs_path":"/opt/projects/claude-sandbox/claude/docs"}'
+call_tool "$BASE" "$K_SESSION" 2 "seed_docs" '{"docs_path":"/opt/projects/mcp-valheim/docs"}'
 
 # ---------------------------------------------------------------------------
 # Decompile full DLL and seed

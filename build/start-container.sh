@@ -25,7 +25,7 @@ else
         -v "$HOME/.steam/steam/steamapps/common/Valheim dedicated server:/opt/valheim-server" \
         -v "$HOME/.steam/steam/steamapps/common/Valheim:/opt/valheim-client" \
         -v "$HOME/Projects:/opt/projects" \
-        -v "$HOME/Projects/claude-sandbox/workspace:/opt/workspace" \
+        -v "$HOME/Projects/claude-sandbox-core/workspaces/valheim:/opt/workspace" \
         -e VALHEIM_SERVER_DIR=/opt/valheim-server \
         -e VALHEIM_CLIENT_DIR=/opt/valheim-client \
         -e VALHEIM_PROJECT_DIR=/opt/projects \
