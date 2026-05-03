@@ -14,12 +14,20 @@ Register with Claude Code:
 """
 
 import os
+import signal
 import subprocess
 from pathlib import Path
 
 import psutil
 from fastmcp import FastMCP
 from mcp_knowledge_base import KnowledgeReporter
+
+# Auto-reap child processes so fire-and-forget Popen() calls (start_server,
+# start_client) don't leave zombies. Without this, when the launched
+# valheim.x86_64 / docker process exits, it lingers as <defunct> and Steam
+# (which shares the process tree) refuses to shut down because it still sees
+# a "running" child.
+signal.signal(signal.SIGCHLD, signal.SIG_IGN)
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 
